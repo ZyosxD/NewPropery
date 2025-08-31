@@ -1,7 +1,7 @@
-url,entry_number,date,name,tax_address
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=66007&avYear=2025","66007","8/29/2025","AVILA; SILVIA ELIZABETH","452 S 400 W PROVO, UT 84601-4318"
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65951&avYear=2025","65951","8/29/2025","MURILLO; MARIO SALAS (ET AL)","539 W 200 N PAYSON, UT 84651-1717"
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65923&avYear=2025","65923","8/29/2025","CARLOS; JESUS ACEVEDO","777 W 200 S PROVO, UT 84601-4061"
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65830&avYear=2025","65830","8/29/2025","ZARAGOZA; DAVID (ET AL)","4972 N SAGE PARK DR EAGLE MOUNTAIN, UT 84005"
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65764&avYear=2025","65764","8/29/2025","ESTEBAN; CLARK T & LORI A","1921 N CREST RD SARATOGA SPRINGS, UT 84045"
-"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65696&avYear=2025","65696","8/29/2025","ZARACHO; OLIMPIA (ET AL)","2328 W 960 N PROVO, UT 84601"
+url,entry_number,date,name,street,city,state,zip
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=66007&avYear=2025","66007","8/29/2025","AVILA; SILVIA ELIZABETH","452 S 400 W","PROVO","UT","84601-4318"
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65951&avYear=2025","65951","8/29/2025","MURILLO; MARIO SALAS (ET AL)","539 W 200 N","PAYSON","UT","84651-1717"
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65923&avYear=2025","65923","8/29/2025","CARLOS; JESUS ACEVEDO","777 W 200 S","PROVO","UT","84601-4061"
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65830&avYear=2025","65830","8/29/2025","ZARAGOZA; DAVID (ET AL)","4972 N SAGE PARK DR","EAGLE MOUNTAIN","UT","84005"
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65764&avYear=2025","65764","8/29/2025","ESTEBAN; CLARK T & LORI A","1921 N CREST RD","SARATOGA SPRINGS","UT","84045"
+"https://www.utahcounty.gov/LandRecords/document.asp?avEntry=65696&avYear=2025","65696","8/29/2025","ZARACHO; OLIMPIA (ET AL)","2328 W 960 N","PROVO","UT","84601"

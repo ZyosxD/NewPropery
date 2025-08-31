@@ -10,31 +10,43 @@ Este proyecto contiene un script para extraer información sobre nuevos propieta
 
 ## Cómo Usar el Scraper
 
-El uso del script es muy sencillo. Abre una terminal y ejecuta el siguiente comando:
+El uso del script es muy sencillo. Abre una terminal y ejecuta el siguiente comando para procesar **todas** las páginas de resultados hasta que no se encuentren más:
 
 ```bash
-python3 run_scraper.py --pages N
+python3 run_scraper.py
 ```
-...donde `N` es el número de páginas de resultados que quieres procesar.
 
-El script mostrará el progreso en la terminal y guardará (o añadirá) los resultados encontrados en el archivo `propietarios_latinos.csv`.
+El script mostrará el progreso en la terminal y guardará (o añadirá) los resultados encontrados en el archivo de salida.
 
-### Argumentos del Script
+### Argumentos Opcionales
 
--   `--pages N`: (Opcional) Especifica el número `N` de páginas de resultados a procesar. **Por defecto, si no se especifica, procesará 1 página.**
--   `--output <nombre_archivo.csv>`: (Opcional) Especifica un nombre diferente para el archivo de salida. Por defecto, es `propietarios_latinos.csv`.
+-   `--pages N`: Limita el número de páginas a procesar a `N`. Es útil para hacer pruebas rápidas sin recorrer todo el sitio.
+-   `--output <nombre_archivo.csv>`: Especifica un nombre diferente para el archivo de salida. Por defecto, es `propietarios_latinos.csv`.
 
 ### Ejemplos de Uso
 
-**Procesar las 5 primeras páginas:**
+**Procesar únicamente las 5 primeras páginas:**
 ```bash
 python3 run_scraper.py --pages 5
 ```
 
-**Procesar 20 páginas y guardar los resultados en `reporte_completo.csv`:**
+**Procesar todas las páginas y guardar los resultados en `reporte_completo.csv`:**
 ```bash
-python3 run_scraper.py --pages 20 --output reporte_completo.csv
+python3 run_scraper.py --output reporte_completo.csv
 ```
+
+## Formato del Archivo de Salida
+
+El archivo CSV de salida tendrá las siguientes columnas:
+
+-   `url`: El enlace directo a la página de detalles del registro.
+-   `entry_number`: El número de entrada del registro.
+-   `date`: La fecha de registro.
+-   `name`: El nombre de la Parte 1.
+-   `street`: La dirección de la calle.
+-   `city`: La ciudad.
+-   `state`: El estado (ej. UT).
+-   `zip`: El código postal.
 
 ## Configuración
 
