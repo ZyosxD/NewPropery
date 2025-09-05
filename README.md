@@ -2,6 +2,11 @@
 
 Este proyecto contiene un script para extraer información sobre nuevos propietarios con apellidos latinos del sitio web de Registros de la Propiedad del Condado de Utah.
 
+El script está diseñado para ser robusto, incluyendo las siguientes características:
+- **Anti-duplicación:** Lee el archivo de resultados existente antes de empezar, para evitar añadir registros que ya han sido guardados en ejecuciones anteriores.
+- **Paginación automática:** Procesa todas las páginas de resultados hasta que no encuentra más.
+- **Salida elegante:** Permite detener el script de forma segura con `Ctrl+C`.
+
 ## Archivos del Proyecto
 
 -   `run_scraper.py`: El script principal y único que necesitas ejecutar. Automatiza todo el proceso de scraping.
@@ -16,7 +21,7 @@ El uso del script es muy sencillo. Abre una terminal y ejecuta el siguiente coma
 python3 run_scraper.py
 ```
 
-El script mostrará el progreso en la terminal y guardará (o añadirá) los resultados encontrados en el archivo de salida.
+El script mostrará el progreso en la terminal y guardará (o añadirá) los resultados encontrados en el archivo de salida, omitiendo cualquier duplicado.
 
 ### Argumentos Opcionales
 

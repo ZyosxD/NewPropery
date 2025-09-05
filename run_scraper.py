@@ -4,27 +4,50 @@ import subprocess
 import argparse
 import time
 import os
+import csv
 
 BASE_URL = "https://www.utahcounty.gov/LandRecords/"
 SURNAMES_FILE = "surnames.txt"
-# Common street suffixes to help differentiate street from city
 STREET_SUFFIXES = {'WAY', 'ST', 'STR', 'AVE', 'BLVD', 'RD', 'DR', 'LN', 'PL', 'CIR', 'CT', 'LOOP', 'HWY', 'PIKE', 'RUN', 'PARK'}
 
 def load_surnames():
-    """Loads surnames from the specified file into a set for efficient lookup."""
+    """Loads surnames from the specified file into a set."""
     if not os.path.exists(SURNAMES_FILE):
         sys.stderr.write(f"Error: El archivo de apellidos '{SURNAMES_FILE}' no fue encontrado.\n")
         sys.exit(1)
     with open(SURNAMES_FILE, 'r', encoding='iso-8859-1') as f:
         return {line.strip().upper() for line in f if line.strip()}
 
+def load_existing_records(filename):
+    """Reads an existing CSV file and returns a set of unique keys (name, street) to prevent duplicates."""
+    existing_records = set()
+    if not os.path.exists(filename):
+        return existing_records
+
+    print(f"Leyendo registros existentes de '{filename}' para evitar duplicados...")
+    with open(filename, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        try:
+            header = next(reader)
+            name_idx = header.index('name')
+            street_idx = header.index('street')
+        except (StopIteration, ValueError):
+            return existing_records
+
+        for row in reader:
+            if len(row) > max(name_idx, street_idx):
+                name = row[name_idx]
+                street = row[street_idx]
+                existing_records.add((name, street))
+    print(f"Se cargaron {len(existing_records)} registros existentes.")
+    return existing_records
+
 def fetch_page(url):
     """Fetches the HTML content of a given URL using curl."""
     try:
         result = subprocess.run(
             ['curl', '-A', 'Mozilla/5.0', '-sL', url],
-            capture_output=True, text=True, encoding='iso-8859-1',
-            check=True, timeout=20
+            capture_output=True, text=True, encoding='iso-8859-1', check=True, timeout=20
         )
         return result.stdout
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
@@ -41,10 +64,8 @@ def parse_results_page(html):
     records = []
     for match in matches:
         records.append({
-            "url": f"{BASE_URL}{match[0].strip()}",
-            "entry_num": match[1].strip(),
-            "date": match[2].strip(),
-            "name": match[3].strip().replace(',', ';')
+            "url": f"{BASE_URL}{match[0].strip()}", "entry_num": match[1].strip(),
+            "date": match[2].strip(), "name": match[3].strip().replace(',', ';')
         })
     return records
 
@@ -53,25 +74,19 @@ def get_and_parse_address(html):
     address_parts = {"street": "Not Found", "city": "Not Found", "state": "Not Found", "zip": "Not Found"}
     pattern_full = re.compile(r'Tax Address:.*?</td>\s*<td[^>]*>(.*?)</td>', re.DOTALL | re.IGNORECASE)
     match_full = pattern_full.search(html)
-
     if not match_full: return address_parts
-
     address_blob = match_full.group(1)
     cleaned_address = ' '.join(re.sub(r'<[^>]+>', ' ', address_blob).strip().split())
-
     parts = cleaned_address.rsplit(',', 1)
     if len(parts) != 2:
-        address_parts['street'] = cleaned_address # Fallback
+        address_parts['street'] = cleaned_address
         return address_parts
-
     street_and_city_str = parts[0].strip()
     state_and_zip_str = parts[1].strip()
-
     state_zip_match = re.search(r'^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$', state_and_zip_str)
     if state_zip_match:
         address_parts['state'] = state_zip_match.group(1)
         address_parts['zip'] = state_zip_match.group(2)
-
     words = street_and_city_str.split(' ')
     city_words = []
     for i in range(len(words) - 1, -1, -1):
@@ -81,22 +96,19 @@ def get_and_parse_address(html):
         else:
             address_parts['street'] = ' '.join(words[0:i+1])
             break
-
     address_parts['city'] = ' '.join(city_words) if city_words else 'Not Found'
     if not address_parts['street'] and not city_words:
         address_parts['street'] = street_and_city_str
-
     return address_parts
 
 def main(pages_limit, output_file):
-    """Main function to orchestrate the scraping process."""
     try:
         surnames = load_surnames()
-        file_exists = os.path.exists(output_file)
-
-        with open(output_file, 'a', encoding='utf-8') as f:
-            if not file_exists:
-                f.write("url,entry_number,date,name,street,city,state,zip\n")
+        existing_records = load_existing_records(output_file)
+        with open(output_file, 'a', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            if not existing_records:
+                writer.writerow(["url", "entry_number", "date", "name", "street", "city", "state", "zip"])
             page_num = 0
             while True:
                 if pages_limit is not None and page_num >= pages_limit:
@@ -107,23 +119,27 @@ def main(pages_limit, output_file):
                 print(f"Procesando página {page_num + 1} (offset={offset})... (Presiona Ctrl+C para detener)")
                 results_html = fetch_page(search_url)
                 if not results_html:
-                    page_num += 1
-                    time.sleep(2) # Wait longer if a page fails to load
-                    continue
+                    page_num += 1; time.sleep(2); continue
                 records = parse_results_page(results_html)
                 if not records:
-                    print("No se encontraron más registros. Terminando.")
-                    break
+                    print("No se encontraron más registros. Terminando."); break
                 for record in records:
                     surname = record["name"].split(';')[0].split(' ')[0].strip().upper()
                     if surname in surnames:
-                        print(f"  Coincidencia encontrada: {record['name']}. Obteniendo dirección...")
+                        print(f"  Coincidencia encontrada: {record['name']}.")
                         address_html = fetch_page(record['url'])
                         if address_html:
                             address = get_and_parse_address(address_html)
-                            f.write(f"\"{record['url']}\",\"{record['entry_num']}\",\"{record['date']}\",\"{record['name']}\","
-                                    f"\"{address['street']}\",\"{address['city']}\",\"{address['state']}\",\"{address['zip']}\"\n")
+                            record_key = (record['name'], address['street'])
+                            if record_key in existing_records:
+                                print(f"    -> Duplicado encontrado. Omitiendo.")
+                                continue
+                            writer.writerow([
+                                record['url'], record['entry_num'], record['date'], record['name'],
+                                address['street'], address['city'], address['state'], address['zip']
+                            ])
                             f.flush()
+                            existing_records.add(record_key)
                 page_num += 1
                 time.sleep(1)
         print(f"\nProceso completado. Los datos han sido guardados en '{output_file}'.")
