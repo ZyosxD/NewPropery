@@ -55,17 +55,29 @@ def fetch_page(url):
         return None
 
 def parse_results_page(html):
-    """Parses the HTML of a search results page to extract individual records."""
+    """
+    Parses the HTML of a search results page to extract individual records.
+    This version correctly captures the Grantee (Party 2) as the name.
+    """
+    # Regex captures: 1:URL, 2:Entry, 3:Date, 4:Grantee(Party 2)
     pattern = re.compile(
-        r'<tr>\s*<td[^>]*>WD</td>\s*<td><a href="([^"]+)">([^<]+)</a></td>\s*<td>\d+</td>\s*<td>([^<]+)</td>\s*<td>([^<]+)</td>.*?</tr>',
+        r'<tr>\s*<td[^>]*>WD</td>\s*<td><a href="([^"]+)">([^<]+)</a></td>\s*<td>\d+</td>\s*<td>([^<]+)</td>\s*<td>.*?</td>\s*<td>(.*?)</td>\s*</tr>',
         re.DOTALL
     )
     matches = pattern.findall(html)
     records = []
     for match in matches:
+        # The Grantee name is the 4th capture group (index 3)
+        grantee_name = match[3].strip().replace(',', ';')
+        # Sometimes the cell can be empty or just &nbsp;
+        if not grantee_name or grantee_name == '&nbsp;':
+            continue
+
         records.append({
-            "url": f"{BASE_URL}{match[0].strip()}", "entry_num": match[1].strip(),
-            "date": match[2].strip(), "name": match[3].strip().replace(',', ';')
+            "url": f"{BASE_URL}{match[0].strip()}",
+            "entry_num": match[1].strip(),
+            "date": match[2].strip(),
+            "name": grantee_name
         })
     return records
 
