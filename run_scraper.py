@@ -51,7 +51,6 @@ def load_existing_records(filename):
             if len(row) > max(name_idx, street_idx):
                 name = row[name_idx]
                 street = row[street_idx]
-                # Use the normalized name for the key
                 normalized_name = normalize_name(name)
                 existing_records.add((normalized_name, street))
     print(f"Se cargaron {len(existing_records)} registros existentes.")
@@ -125,10 +124,8 @@ def main(pages_limit, output_file):
         existing_records = load_existing_records(output_file)
         with open(output_file, 'a', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
-            # Write header only if file was empty
-            if os.path.getsize(output_file) == 0:
+            if not existing_records: # Write header only if the file is new/empty
                 writer.writerow(["url", "entry_number", "date", "name", "street", "city", "state", "zip"])
-
             page_num = 0
             while True:
                 if pages_limit is not None and page_num >= pages_limit:
@@ -150,15 +147,11 @@ def main(pages_limit, output_file):
                         address_html = fetch_page(record['url'])
                         if address_html:
                             address = get_and_parse_address(address_html)
-
-                            # De-duplication check using NORMALIZED name
                             normalized_name = normalize_name(record['name'])
                             record_key = (normalized_name, address['street'])
-
                             if record_key in existing_records:
                                 print(f"    -> Duplicado encontrado (nombre normalizado). Omitiendo.")
                                 continue
-
                             writer.writerow([
                                 record['url'], record['entry_num'], record['date'], record['name'],
                                 address['street'], address['city'], address['state'], address['zip']
