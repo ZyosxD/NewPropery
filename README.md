@@ -3,7 +3,7 @@
 Este proyecto contiene un script para extraer información sobre nuevos propietarios con apellidos latinos del sitio web de Registros de la Propiedad del Condado de Utah.
 
 El script está diseñado para ser robusto, incluyendo las siguientes características:
-- **Anti-duplicación:** Lee el archivo de resultados existente antes de empezar, para evitar añadir registros que ya han sido guardados en ejecuciones anteriores.
+- **Anti-duplicación Inteligente:** Lee el archivo de resultados existente antes de empezar. Para una mejor detección, "normaliza" los nombres, eliminando sufijos comunes como `(ET AL)` o `TEE` antes de comparar. Esto evita duplicados incluso cuando hay pequeñas variaciones en el nombre de una misma persona en la misma dirección.
 - **Paginación automática:** Procesa todas las páginas de resultados hasta que no encuentra más.
 - **Salida elegante:** Permite detener el script de forma segura con `Ctrl+C`.
 

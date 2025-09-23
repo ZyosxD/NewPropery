@@ -9,6 +9,19 @@ import csv
 BASE_URL = "https://www.utahcounty.gov/LandRecords/"
 SURNAMES_FILE = "surnames.txt"
 STREET_SUFFIXES = {'WAY', 'ST', 'STR', 'AVE', 'BLVD', 'RD', 'DR', 'LN', 'PL', 'CIR', 'CT', 'LOOP', 'HWY', 'PIKE', 'RUN', 'PARK'}
+# Patterns to remove from names for de-duplication
+NAME_NOISE = [
+    re.compile(r'\s+\(ET AL\)$', re.IGNORECASE),
+    re.compile(r'\s+TEE$', re.IGNORECASE),
+    re.compile(r'\s+SUCTEE$', re.IGNORECASE)
+]
+
+def normalize_name(name):
+    """Removes common suffixes from a name string for better de-duplication."""
+    normalized = name
+    for pattern in NAME_NOISE:
+        normalized = pattern.sub('', normalized)
+    return normalized.strip()
 
 def load_surnames():
     """Loads surnames from the specified file into a set."""
@@ -19,7 +32,7 @@ def load_surnames():
         return {line.strip().upper() for line in f if line.strip()}
 
 def load_existing_records(filename):
-    """Reads an existing CSV file and returns a set of unique keys (name, street) to prevent duplicates."""
+    """Reads an existing CSV file and returns a set of unique keys (normalized_name, street) to prevent duplicates."""
     existing_records = set()
     if not os.path.exists(filename):
         return existing_records
@@ -38,7 +51,9 @@ def load_existing_records(filename):
             if len(row) > max(name_idx, street_idx):
                 name = row[name_idx]
                 street = row[street_idx]
-                existing_records.add((name, street))
+                # Use the normalized name for the key
+                normalized_name = normalize_name(name)
+                existing_records.add((normalized_name, street))
     print(f"Se cargaron {len(existing_records)} registros existentes.")
     return existing_records
 
@@ -55,11 +70,7 @@ def fetch_page(url):
         return None
 
 def parse_results_page(html):
-    """
-    Parses the HTML of a search results page to extract individual records.
-    This version correctly captures the Grantee (Party 2) as the name.
-    """
-    # Regex captures: 1:URL, 2:Entry, 3:Date, 4:Grantee(Party 2)
+    """Parses the HTML of a search results page to extract individual records."""
     pattern = re.compile(
         r'<tr>\s*<td[^>]*>WD</td>\s*<td><a href="([^"]+)">([^<]+)</a></td>\s*<td>\d+</td>\s*<td>([^<]+)</td>\s*<td>.*?</td>\s*<td>(.*?)</td>\s*</tr>',
         re.DOTALL
@@ -67,17 +78,12 @@ def parse_results_page(html):
     matches = pattern.findall(html)
     records = []
     for match in matches:
-        # The Grantee name is the 4th capture group (index 3)
         grantee_name = match[3].strip().replace(',', ';')
-        # Sometimes the cell can be empty or just &nbsp;
         if not grantee_name or grantee_name == '&nbsp;':
             continue
-
         records.append({
-            "url": f"{BASE_URL}{match[0].strip()}",
-            "entry_num": match[1].strip(),
-            "date": match[2].strip(),
-            "name": grantee_name
+            "url": f"{BASE_URL}{match[0].strip()}", "entry_num": match[1].strip(),
+            "date": match[2].strip(), "name": grantee_name
         })
     return records
 
@@ -119,8 +125,10 @@ def main(pages_limit, output_file):
         existing_records = load_existing_records(output_file)
         with open(output_file, 'a', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
-            if not existing_records:
+            # Write header only if file was empty
+            if os.path.getsize(output_file) == 0:
                 writer.writerow(["url", "entry_number", "date", "name", "street", "city", "state", "zip"])
+
             page_num = 0
             while True:
                 if pages_limit is not None and page_num >= pages_limit:
@@ -142,10 +150,15 @@ def main(pages_limit, output_file):
                         address_html = fetch_page(record['url'])
                         if address_html:
                             address = get_and_parse_address(address_html)
-                            record_key = (record['name'], address['street'])
+
+                            # De-duplication check using NORMALIZED name
+                            normalized_name = normalize_name(record['name'])
+                            record_key = (normalized_name, address['street'])
+
                             if record_key in existing_records:
-                                print(f"    -> Duplicado encontrado. Omitiendo.")
+                                print(f"    -> Duplicado encontrado (nombre normalizado). Omitiendo.")
                                 continue
+
                             writer.writerow([
                                 record['url'], record['entry_num'], record['date'], record['name'],
                                 address['street'], address['city'], address['state'], address['zip']
